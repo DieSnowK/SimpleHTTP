@@ -24,18 +24,20 @@ public:
             if(svr == nullptr)
             {
                 svr = new TcpServer(port);
-                svr->Init(port);
+                svr->Init();
             }
             pthread_mutex_unlock(&lock);
         }
 
         return svr;
     }
+
     void Init()
     {
         Socket();
         Bind();
         Listen();
+        LOG(INFO, "TcpServer Init ... Success");
     }
 
     void Socket()
@@ -43,6 +45,7 @@ public:
         _listensock = socket(AF_INET, SOCK_STREAM, 0);
         if(_listensock < 0)
         {
+            LOG(FATAL, "Socket Error");
             exit(1);
         }
 
