@@ -7,4 +7,5 @@ $(bin):$(src)
 	$(cc) -o $@ $^ $(LD_FLAGS)
 
 .PHONY:clean
-clean:rm -f $(bin)
+clean:
+	rm -f $(bin)
