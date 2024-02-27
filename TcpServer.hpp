@@ -1,5 +1,4 @@
 #pragma once
-
 #include <cstdlib>
 #include <cstring>
 #include <unistd.h>
@@ -53,6 +52,7 @@ public:
         // 设置端口复用
         int opt = 1;
         setsockopt(_listenSock, SOL_SOCKET, SO_REUSEPORT, &opt, sizeof(opt));
+        LOG(INFO, "Create Listen Socket ... Success");
     }
 
     void Bind()
@@ -68,6 +68,7 @@ public:
             LOG(FATAL, "Bind Error");
             exit(2);
         }
+        LOG(INFO, "Bind Socket ... Success");
     }
 
     void Listen()
@@ -77,6 +78,7 @@ public:
             LOG(FATAL, "Listen Error");
             exit(3);
         }
+        LOG(INFO, "Listen Socket ... Success");
     }
 
     int Sock()

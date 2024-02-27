@@ -1,5 +1,4 @@
 #include <iostream>
-#include <string>
 #include <memory>
 #include "HttpServer.hpp"
 
@@ -19,6 +18,6 @@ int main(int argc, char *argv[])
     std::unique_ptr<HttpServer> httpServer(new HttpServer);
     httpServer->Init();
     httpServer->Loop();
-    
+
     return 0;
 }
