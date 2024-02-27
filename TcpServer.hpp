@@ -14,7 +14,7 @@ static const int BACKLOG = 128;
 class TcpServer
 {
 public:
-    TcpServer* GetInstance(uint16_t port)
+    static TcpServer* GetInstance(uint16_t port)
     {
         // zhu yi xian cheng an quan
         static pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
@@ -64,6 +64,7 @@ public:
 
         if(bind(_listensock, (struct sockaddr*)&local, sizeof(local)) < 0)
         {
+            LOG(FATAL, "Bind Error");
             exit(2);
         }
     }
@@ -72,6 +73,7 @@ public:
     {
         if(listen(_listensock, BACKLOG) < 0)
         {
+            LOG(FATAL, "Listen Error");
             exit(3);
         }
     }

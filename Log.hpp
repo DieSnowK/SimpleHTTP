@@ -13,5 +13,5 @@
 
 void Log(std::string level, std::string msg, std::string file_name, int line)
 {
-    std::cout << "[" << level << "][" << time(nullptr) << "][" << msg << "][" << file_name << "]["<< line << std::endl;
+    std::cout << "[" << level << "][" << time(nullptr) << "][" << msg << "][" << file_name << "]["<< line << "]" << std::endl;
 }

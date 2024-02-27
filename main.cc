@@ -2,7 +2,7 @@
 
 int main()
 {
-  
-
-  return 0;
+    TcpServer::GetInstance(8080);
+    sleep(1000);
+    return 0;
 }
