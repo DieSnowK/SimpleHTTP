@@ -43,7 +43,7 @@ struct Util
                 // Error
                 return -1;
             }
-            out += ch;
+           //  out += ch;
         }
 
         return out.size();
