@@ -120,6 +120,11 @@ private:
 
         return false;
     }
+    
+    void RecvRequestBody()
+    {
+        
+    }
 
     void ParseRequest()
     {
@@ -138,6 +143,8 @@ struct Entrance
     static void* HandlerRequest(void* arg)
     {
         LOG(INFO, "Hander Request Begin");
+        int sock = *((int*)arg);
+
         EndPoint *ep = new EndPoint(sock); // TODO
         ep->RecvRequest();
         ep->ParseRequest();
