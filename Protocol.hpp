@@ -1,9 +1,14 @@
 #pragma once
 #include <vector>
 #include <string>
+#include <unordered_map>
 #include <unistd.h>
+#include <sstream>
 #include "Util.hpp"
 #include "Log.hpp"
+
+#define SEP "\n"
+
 class HttpRequest
 {
 public:
@@ -16,6 +21,9 @@ public:
     std::string method;
     std::string uri;
     std::string version;
+
+    std::unordered_map<std::string, std::string> headerMap;
+    size_t content_length;
 };
 
 class HttpResponse
@@ -57,6 +65,8 @@ private:
     void RecvRequestLine()
     {
         Util::ReadLine(_sock, _httpRequest.request_line);
+        _httpRequest.request_line.resize(line.size() - 1); // No Blank
+        LOG(DEBUG, _httpRequest.request_line);
     }
 
     void RecvRequestHeader()
@@ -70,7 +80,7 @@ private:
                 break;
             }
 
-            if(line == '\n')
+            if(line == "\n")
             {
                 _httpResponse.response_header = line;
                 break;
@@ -79,12 +89,46 @@ private:
             line.resize(line.size() - 1); // No Blank
             _httpRequest.request_header.push_back(line);
             
-
+            LOG(DEBUG, line); 
         }
     }
 
+    void ParseRequestLine()
+    {
+        std::stringstream ss(_httpRequest.request_line); // TODO
+        ss >> _httpRequest.method >> _httpRequest.uri >> _httpRequest.version;
+    }
+
+    void ParseRequestHeader()
+    {
+        std::string key;
+        std::string value;
+        for(auto& str : _httpRequest.request_header)
+        {
+           if(Util::CutString(str, key, value, SEP))
+           {
+               _httpRequest.headerMap[key] = value;
+           }
+        }
+    }
+
+    bool IsRecvRequestBody()
+    {
+        std::string& method = _httpRequest.method;
+        if(method == "POST")
+        {
+            _httpRequest.content_length = atoi(_httpRequest.headerMap["Content-Length"].c_str());
+            return true;
+        }
+
+        return false;
+    }
+
     void ParseRequest()
-    {}
+    {
+        ParseRequestLine();
+
+    }
 private:
     int _sock;
     HttpRequest _httpRequest;

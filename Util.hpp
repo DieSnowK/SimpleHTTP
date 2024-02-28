@@ -48,4 +48,17 @@ struct Util
 
         return out.size();
     }
+
+    static bool CutString(const std::string& str, std::string& key, std::string& value, std::string sep)
+    {
+        size_t pos = str.find(sep);
+        if(pos != std::string::npos)
+        {
+            key = str.substr(0, pos);
+            value = str.substr(pos + sep.size());
+            return true;
+        }
+
+        return false;
+    }
 };
