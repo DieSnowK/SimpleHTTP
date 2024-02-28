@@ -123,7 +123,26 @@ private:
     
     void RecvRequestBody()
     {
-        
+        if(IsRecvRequestBody())
+        {
+            size_t length = _httpRequest.content_length;
+            auto& body = _httpRequest.request_body;
+            char ch = 'K';
+            
+            while(length)
+            {
+                ssize_t s = recv(_sock, &ch, 1, 0);
+                if(s > 0)
+                {
+                    body.push_back(ch);
+                    length--;
+                }
+
+                // TODO
+            }
+
+            LOG(DEBUG, body);
+        }
     }
 
     void ParseRequest()
