@@ -22,6 +22,10 @@ struct HttpRequest
     std::string version;
     std::unordered_map<std::string, std::string> headerMap;
     size_t content_length;
+
+    HttpRequest()
+        : content_length(0)
+    {}
 };
 
 struct HttpResponse
@@ -50,6 +54,7 @@ public:
     {
         RecvRequestHeader();
         RecvRequestHeader();
+        ParseRequest();
     }
 
     void BuildResponse()
@@ -59,6 +64,13 @@ public:
     {}
 
 private:
+    void ParseRequest()
+    {
+        ParseRequestLine();
+        ParseRequestHeader();
+        RecvRequestBody();
+    }
+
     void RecvRequestLine()
     {
         Util::ReadLine(_sock, _httpRequest.request_line);
@@ -94,6 +106,10 @@ private:
     {
         std::stringstream ss(_httpRequest.request_line); // TODO 可整理
         ss >> _httpRequest.method >> _httpRequest.uri >> _httpRequest.version;
+
+        LOG(DEBUG, _httpRequest.method);
+        LOG(DEBUG, _httpRequest.uri);
+        LOG(DEBUG, _httpRequest.version);
     }
 
     void ParseRequestHeader()
@@ -127,8 +143,8 @@ private:
         {
             size_t length = _httpRequest.content_length;
             auto& body = _httpRequest.request_body;
+
             char ch = 'K';
-            
             while(length)
             {
                 ssize_t s = recv(_sock, &ch, 1, 0);
@@ -137,18 +153,15 @@ private:
                     body.push_back(ch);
                     length--;
                 }
-
-                // TODO
+                else
+                {
+                    // TODO
+                    break;
+                }
             }
 
             LOG(DEBUG, body);
         }
-    }
-
-    void ParseRequest()
-    {
-        ParseRequestLine();
-
     }
 private:
     int _sock;
@@ -166,7 +179,6 @@ struct Entrance
 
         EndPoint *ep = new EndPoint(sock); // TODO
         ep->RecvRequest();
-        ep->ParseRequest();
         ep->BuildResponse();
         ep->SendResponse();
         delete ep;
