@@ -1,6 +1,6 @@
 bin = httpserver
 cc = g++
-LD_FLAGS = -std=c++11 -lpthread
+LD_FLAGS = -std=c++11 -lpthread #-D DEBUG_SHOW
 src = main.cc
 
 $(bin):$(src)

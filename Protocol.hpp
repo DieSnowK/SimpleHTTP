@@ -7,28 +7,25 @@
 #include "Util.hpp"
 #include "Log.hpp"
 
-#define SEP "\n"
+#define SEP ": "
 
-class HttpRequest
+struct HttpRequest
 {
-public:
     std::string request_line;
     std::vector<std::string> request_header;
     std::string blank;
     std::string request_body;
 
-    // Parse Ret
+    // 解析结果
     std::string method;
     std::string uri;
     std::string version;
-
     std::unordered_map<std::string, std::string> headerMap;
     size_t content_length;
 };
 
-class HttpResponse
+struct HttpResponse
 {
-public:
     std::string status_line;
     std::vector<std::string> response_header;
     std::string blank;
@@ -65,7 +62,7 @@ private:
     void RecvRequestLine()
     {
         Util::ReadLine(_sock, _httpRequest.request_line);
-        _httpRequest.request_line.resize(line.size() - 1); // No Blank
+        _httpRequest.request_line.resize(_httpRequest.request_line.size() - 1); // 去掉结尾换行符
         LOG(DEBUG, _httpRequest.request_line);
     }
 
@@ -82,11 +79,11 @@ private:
 
             if(line == "\n")
             {
-                _httpResponse.response_header = line;
+                _httpRequest.blank = line;
                 break;
             }
 
-            line.resize(line.size() - 1); // No Blank
+            line.resize(line.size() - 1); // 去掉结尾换行符
             _httpRequest.request_header.push_back(line);
             
             LOG(DEBUG, line); 
@@ -95,7 +92,7 @@ private:
 
     void ParseRequestLine()
     {
-        std::stringstream ss(_httpRequest.request_line); // TODO
+        std::stringstream ss(_httpRequest.request_line); // TODO 可整理
         ss >> _httpRequest.method >> _httpRequest.uri >> _httpRequest.version;
     }
 
