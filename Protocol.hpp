@@ -11,6 +11,11 @@ public:
     std::vector<std::string> request_header;
     std::string blank;
     std::string request_body;
+
+    // Parse Ret
+    std::string method;
+    std::string uri;
+    std::string version;
 };
 
 class HttpResponse
@@ -37,10 +42,10 @@ public:
     }
 
     void RecvRequest()
-    {}
-
-    void ParseRequest()
-    {}
+    {
+        RecvRequestHeader();
+        RecvRequestHeader();
+    }
 
     void BuildResponse()
     {}
@@ -56,9 +61,30 @@ private:
 
     void RecvRequestHeader()
     {
+        std::string line;
+        while(true)
+        {
+            line.clear();
+            if(Util::ReadLine(_sock, line) <= 0)
+            {
+                break;
+            }
 
+            if(line == '\n')
+            {
+                _httpResponse.response_header = line;
+                break;
+            }
+
+            line.resize(line.size() - 1); // No Blank
+            _httpRequest.request_header.push_back(line);
+            
+
+        }
     }
 
+    void ParseRequest()
+    {}
 private:
     int _sock;
     HttpRequest _httpRequest;
