@@ -1,4 +1,5 @@
 #pragma once
+#include <algorithm>
 #include <sstream>
 #include <string>
 #include <vector>
@@ -31,8 +32,11 @@ struct HttpRequest
     std::string path;
     std::string arg;
 
+    bool cgi;
+
     HttpRequest()
         : content_length(0)
+        , cgi(false)
     {}
 };
 
@@ -80,17 +84,26 @@ public:
             goto END;
         }
 
-        // GET可能带参数，也可能不带参数，要区分出来
         if (_httpRequest.method == "GET")
         {
+            // GET可能带参数，也可能不带参数，要区分出来
             if (_httpRequest.uri.find('?') != std::string::npos)
             {
                 Util::CutString(_httpRequest.uri, _httpRequest.path, _httpRequest.arg, "?");
+                _httpRequest.cgi = true;
             }
             else
             {
                 _httpRequest.path = _httpRequest.uri;
             }
+        }
+        else if(_httpRequest.method == "POST")
+        {
+            _httpRequest.cgi = true;
+        }
+        else
+        {
+            // Do Nothing
         }
 
         _httpRequest.path.insert(0, WEB_ROOT); // 从根目录开始
@@ -122,7 +135,7 @@ public:
             // 是否是一个可程序程序？
             if (st.st_mode & S_IXUSR || st.st_mode & S_IXGRP || st.st_mode & S_IXOTH)
             {
-                
+                _httpRequest.cgi = true; // TODO CGI标志位感觉有多余
             }
         }
         else
@@ -131,6 +144,15 @@ public:
             LOG(WARNING, _httpRequest.path + "Not Found");
             _httpResponse.status_code = NOT_FOUND;
             goto END;
+        }
+
+        if(_httpRequest.cgi)
+        {
+            // ProcessCgi();
+        }
+        else
+        {
+            ProcessNonCgi(); // 返回静态网页
         }
 
     END:
@@ -183,6 +205,10 @@ private:
     {
         std::stringstream ss(_httpRequest.request_line); // TODO 可整理
         ss >> _httpRequest.method >> _httpRequest.uri >> _httpRequest.version;
+
+        // TODO 可整理
+        // 可能不是所有人都严格遵守标准，所以将method统一转化为大写
+        std::transform(_httpRequest.method.begin(), _httpRequest.method.end(), _httpRequest.method.begin(), ::toupper);
 
         LOG(DEBUG, _httpRequest.method);
         LOG(DEBUG, _httpRequest.uri);
@@ -240,6 +266,12 @@ private:
             LOG(DEBUG, body);
         }
     }
+
+    int ProcessNonCgi()
+    {
+        return 0;
+    }
+
 private:
     int _sock;
     HttpRequest _httpRequest;
