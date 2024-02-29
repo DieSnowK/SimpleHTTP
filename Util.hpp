@@ -43,19 +43,18 @@ struct Util
                 // Error
                 return -1;
             }
-           //  out += ch;
         }
 
         return out.size();
     }
 
-    static bool CutString(const std::string& str, std::string& key, std::string& value, std::string sep)
+    static bool CutString(const std::string& str, std::string& sub1, std::string& sub2, std::string sep)
     {
         size_t pos = str.find(sep);
         if(pos != std::string::npos)
         {
-            key = str.substr(0, pos);
-            value = str.substr(pos + sep.size());
+            sub1 = str.substr(0, pos);
+            sub2 = str.substr(pos + sep.size());
             return true;
         }
 

@@ -1,13 +1,19 @@
 #pragma once
-#include <vector>
-#include <string>
-#include <unordered_map>
-#include <unistd.h>
 #include <sstream>
+#include <string>
+#include <vector>
+#include <unordered_map>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
 #include "Util.hpp"
 #include "Log.hpp"
 
 #define SEP ": "
+#define WEB_ROOT  "webRoot"
+#define HOME_PAGE "index.html"
+#define OK 200
+#define NOT_FOUND 404
 
 struct HttpRequest
 {
@@ -22,6 +28,8 @@ struct HttpRequest
     std::string version;
     std::unordered_map<std::string, std::string> headerMap;
     size_t content_length;
+    std::string path;
+    std::string arg;
 
     HttpRequest()
         : content_length(0)
@@ -34,6 +42,11 @@ struct HttpResponse
     std::vector<std::string> response_header;
     std::string blank;
     std::string response_body;
+    int status_code;
+
+    HttpResponse()
+        : status_code(OK)
+    {}
 };
 
 // 负责两端业务处理，主要包括以下功能
@@ -52,13 +65,77 @@ public:
 
     void RecvRequest()
     {
-        RecvRequestHeader();
+        RecvRequestLine();
         RecvRequestHeader();
         ParseRequest();
     }
 
     void BuildResponse()
-    {}
+    {
+        if(_httpRequest.method != "GET" && _httpRequest.method != "POST")
+        {
+            // 非法请求
+            _httpResponse.status_code = NOT_FOUND; // TODO
+            LOG(WARNING, "Method is not right");
+            goto END;
+        }
+
+        // GET可能带参数，也可能不带参数，要区分出来
+        if (_httpRequest.method == "GET")
+        {
+            if (_httpRequest.uri.find('?') != std::string::npos)
+            {
+                Util::CutString(_httpRequest.uri, _httpRequest.path, _httpRequest.arg, "?");
+            }
+            else
+            {
+                _httpRequest.path = _httpRequest.uri;
+            }
+        }
+
+        _httpRequest.path.insert(0, WEB_ROOT); // 从根目录开始
+
+        LOG(DEBUG, _httpRequest.path);
+        LOG(DEBUG, _httpRequest.arg);
+
+        // 如果访问的是根目录，则默认访问主页
+        if(_httpRequest.path[_httpRequest.path.size() - 1] == '/')
+        {
+            _httpRequest.path += HOME_PAGE;
+        }
+
+        LOG(DEBUG, _httpRequest.path);
+
+        // 确认访问资源是否存在
+        struct stat st;
+        if(stat(_httpRequest.path.c_str(), &st) == 0) // TODO  待整理stat()
+        {
+            // 访问的是否是一个具体资源？
+            if(S_ISDIR(st.st_mode))
+            {
+                // 请求的是一个目录，需要特殊处理 -- 改为访问该目录下主页
+                // 虽然是目录，但是绝对不会以/结尾
+                _httpRequest.path += "/";
+                _httpRequest.path += HOME_PAGE;
+            }
+
+            // 是否是一个可程序程序？
+            if (st.st_mode & S_IXUSR || st.st_mode & S_IXGRP || st.st_mode & S_IXOTH)
+            {
+                
+            }
+        }
+        else
+        {
+            // 资源不存在
+            LOG(WARNING, _httpRequest.path + "Not Found");
+            _httpResponse.status_code = NOT_FOUND;
+            goto END;
+        }
+
+    END:
+        return;
+    }
 
     void SendResponse()
     {}
