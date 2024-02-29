@@ -152,6 +152,8 @@ public:
         }
         else
         {
+            // 1.至此，目标网页一定是存在的
+            // 2.返回并不是单单返回网页，而是要构建HTTP响应 // TODO
             ProcessNonCgi(); // 返回静态网页
         }
 
@@ -269,6 +271,7 @@ private:
 
     int ProcessNonCgi()
     {
+        
         return 0;
     }
 
