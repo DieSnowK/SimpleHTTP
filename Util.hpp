@@ -1,5 +1,6 @@
 #pragma once
 #include <string>
+#include <unordered_map>
 #include <sys/types.h>
 #include <sys/socket.h>
 
@@ -59,5 +60,46 @@ struct Util
         }
 
         return false;
+    }
+
+    static std::string Code2Desc(int code)
+    {
+        std::string desc = "";
+        switch (code)
+        {
+        case 200:
+            desc = "OK";
+            break;
+        case 404:
+            desc = "404";
+            break;
+        default:
+            break;
+        }
+
+        return desc;
+    }
+
+    // 后面可以考虑写进配置文件，然后load进来
+    // 暂且方案先写成硬编码进源码里
+    static std::string Suffix2Desc(const std::string& suffix)
+    {
+        static std::unordered_map<std::string, std::string> suffix2desc = {
+            {".html", "text/html"},
+            {".css", "text/css"},
+            {".js", "application/javascript"},
+            {".jpg", "application/x-jpg"},
+            {".xml", "application/xml"}
+        };
+
+        auto iter = suffix2desc.find(suffix);
+        if(iter != suffix2desc.end())
+        {
+            return iter->second;
+        }
+        else
+        {
+            return "text/html";
+        }
     }
 };

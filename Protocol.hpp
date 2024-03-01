@@ -34,6 +34,7 @@ struct HttpRequest
     std::unordered_map<std::string, std::string> headerMap;
     size_t content_length;
     std::string path;
+    std::string suffix;
     std::string arg;
 
     bool cgi;
@@ -85,7 +86,8 @@ public:
 
     void BuildResponse()
     {
-        if(_httpRequest.method != "GET" && _httpRequest.method != "POST")
+        size_t pos = 0;
+        if (_httpRequest.method != "GET" && _httpRequest.method != "POST")
         {
             // 非法请求
             _httpResponse.status_code = NOT_FOUND; // TODO
@@ -160,15 +162,26 @@ public:
             goto END;
         }
 
+        // 读取文件后缀
+        pos = _httpRequest.path.rfind('.');
+        if (pos== std::string::npos)
+        {
+            _httpRequest.suffix = ".html"; // 没找到就默认设置为html
+        }
+        else
+        {
+            _httpRequest.suffix = _httpRequest.path.substr(pos);
+        }
+
         if(_httpRequest.cgi)
         {
-            // ProcessCgi();
+            _httpResponse.status_code = ProcessCgi();
         }
         else
         {
             // 1.至此，目标网页一定是存在的
             // 2.返回并不是单单返回网页，而是要构建HTTP响应 // TODO
-            _httpResponse.status_code = ProcessNonCgi(); // 返回静态网页 // TODO
+            _httpResponse.status_code = ProcessNonCgi();
         }
 
     END:
@@ -300,40 +313,40 @@ private:
         }
     }
 
+    // 处理静态网页
     int ProcessNonCgi()
     {
         _httpResponse.fd = open(_httpRequest.path.c_str(), O_RDONLY);
         if(_httpResponse.fd >= 0)
         {
+            // Status_Line
             _httpResponse.status_line = HTTP_VERSION;
             _httpResponse.status_line += " ";
             _httpResponse.status_line += std::to_string(_httpResponse.status_code);
             _httpResponse.status_line += " ";
-            _httpResponse.status_line += Code2Desc(_httpResponse.status_code);
+            _httpResponse.status_line += Util::Code2Desc(_httpResponse.status_code);
             _httpResponse.status_line += LINE_END;
 
+            // Header
+            std::string header_line = "Content-Type: ";
+            header_line += Util::Suffix2Desc(_httpRequest.suffix);
+            header_line += LINE_END;
+            _httpResponse.response_header.push_back(header_line);
+
+            header_line = "Content-Length: ";
+            header_line += std::to_string(_httpResponse.fSize);
+            header_line += LINE_END;
+            _httpResponse.response_header.push_back(header_line);
             return OK;
         }
 
         return NOT_FOUND;
     }
 
-    std::string Code2Desc(int code)
+    int ProcessCgi()
     {
-        std::string desc = "";
-        switch (code)
-        {
-        case 200:
-            desc = "OK";
-            break;
-        case 400:
-            desc = "404";
-            break;
-        default:
-            break;
-        }
 
-        return desc;
+        return 0;
     }
 
 private:
