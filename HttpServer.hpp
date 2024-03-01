@@ -2,7 +2,7 @@
 #include "TcpServer.hpp"
 #include "Protocol.hpp"
 
-static const uint16_t PORT = 8080;
+static const uint16_t PORT = 6666;
 
 class HttpServer
 {
