@@ -4,14 +4,17 @@
 #include <string>
 #include <vector>
 #include <unordered_map>
+#include <sys/sendfile.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <fcntl.h>
 #include <unistd.h>
 #include "Util.hpp"
 #include "Log.hpp"
 
 #define SEP ": "
-#define WEB_ROOT  "webRoot"
+#define LINE_END "\r\n"
+#define WEB_ROOT  "wwwroot"
 #define HOME_PAGE "index.html"
 #define HTTP_VERSION "HTTP/1.0"
 #define OK 200
@@ -47,10 +50,15 @@ struct HttpResponse
     std::vector<std::string> response_header;
     std::string blank;
     std::string response_body;
+
     int status_code;
+    int fd;
+    int fSize;
 
     HttpResponse()
         : status_code(OK)
+        , fd(-1)
+        , blank(LINE_END)
     {}
 };
 
@@ -131,6 +139,9 @@ public:
                 // 虽然是目录，但是绝对不会以/结尾
                 _httpRequest.path += "/";
                 _httpRequest.path += HOME_PAGE;
+
+                // 上面更改了path指向，所以重新获取文件状态
+                stat(_httpRequest.path.c_str(), &st);
             }
 
             // 是否是一个可程序程序？
@@ -138,6 +149,8 @@ public:
             {
                 _httpRequest.cgi = true; // TODO CGI标志位感觉有多余
             }
+
+            _httpResponse.fSize = st.st_size;
         }
         else
         {
@@ -155,15 +168,32 @@ public:
         {
             // 1.至此，目标网页一定是存在的
             // 2.返回并不是单单返回网页，而是要构建HTTP响应 // TODO
-            ProcessNonCgi(); // 返回静态网页
+            _httpResponse.status_code = ProcessNonCgi(); // 返回静态网页 // TODO
         }
 
     END:
+        if(_httpResponse.status_code != OK)
+        {
+
+        }
         return;
     }
 
     void SendResponse()
-    {}
+    {
+        // 分多次发和把所有内容合成一个字符串一次性发送是没区别的
+        // send只是把内容拷贝到发送缓冲区中
+        // 具体什么时候发，一次性发多少，是由TCP决定的
+        send(_sock, _httpResponse.status_line.c_str(), _httpResponse.status_line.size(), 0);
+        for(auto& str : _httpResponse.response_header)
+        {
+            send(_sock, str.c_str(), str.size(), 0);
+        }
+        send(_sock, _httpResponse.blank.c_str(), _httpResponse.blank.size(), 0);
+        sendfile(_sock, _httpResponse.fd, nullptr, _httpResponse.fSize); // TODO 待整理
+
+        close(_httpResponse.fd);
+    }
 
 private:
     void ParseRequest()
@@ -272,19 +302,26 @@ private:
 
     int ProcessNonCgi()
     {
-        _httpResponse.status_line = HTTP_VERSION;
-        _httpResponse.status_line += " ";
-        _httpResponse.status_line += std::to_string(_httpResponse.status_code);
-        _httpResponse.status_line += " ";
+        _httpResponse.fd = open(_httpRequest.path.c_str(), O_RDONLY);
+        if(_httpResponse.fd >= 0)
+        {
+            _httpResponse.status_line = HTTP_VERSION;
+            _httpResponse.status_line += " ";
+            _httpResponse.status_line += std::to_string(_httpResponse.status_code);
+            _httpResponse.status_line += " ";
+            _httpResponse.status_line += Code2Desc(_httpResponse.status_code);
+            _httpResponse.status_line += LINE_END;
 
+            return OK;
+        }
 
-        return 0;
+        return NOT_FOUND;
     }
 
     std::string Code2Desc(int code)
     {
         std::string desc = "";
-        switch(code)
+        switch (code)
         {
         case 200:
             desc = "OK";
