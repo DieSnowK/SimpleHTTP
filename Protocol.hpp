@@ -13,6 +13,7 @@
 #define SEP ": "
 #define WEB_ROOT  "webRoot"
 #define HOME_PAGE "index.html"
+#define HTTP_VERSION "HTTP/1.0"
 #define OK 200
 #define NOT_FOUND 404
 
@@ -271,8 +272,31 @@ private:
 
     int ProcessNonCgi()
     {
-        
+        _httpResponse.status_line = HTTP_VERSION;
+        _httpResponse.status_line += " ";
+        _httpResponse.status_line += std::to_string(_httpResponse.status_code);
+        _httpResponse.status_line += " ";
+
+
         return 0;
+    }
+
+    std::string Code2Desc(int code)
+    {
+        std::string desc = "";
+        switch(code)
+        {
+        case 200:
+            desc = "OK";
+            break;
+        case 400:
+            desc = "404";
+            break;
+        default:
+            break;
+        }
+
+        return desc;
     }
 
 private:
