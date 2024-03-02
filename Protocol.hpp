@@ -371,6 +371,19 @@ private:
             close(output[1]);
             close(input[0]);
 
+            // 子进程如何知道方法是什么? // TODO
+            std::string methodEnv = "METHOD=";
+            methodEnv += _httpRequest.method;
+            putenv((char *)methodEnv.c_str());
+
+            // GET带参通过环境变量导入子进程 // TODO 待整理
+            if(_httpRequest.method == "GET")
+            {
+                std::string argEnv = "ARG_STRING=";
+                argEnv += _httpRequest.arg;
+                putenv((char *)argEnv.c_str());
+            }
+
             // 进程替换之后，子进程如何得知，对应的读写文件描述符是多少呢？ // TODO
             // 虽然替换后子进程不知道对应读写fd，但是一定知道0 && 1
             // 此时不需要知道读写fd了，只需要读0写1即可
@@ -394,7 +407,13 @@ private:
 
             if(_httpRequest.method == "POST")
             {
-                
+                // 不能确保一次性就能写完，所以
+                const char *start = _httpRequest.request_body.c_str();
+                int size = 0, total = 0;
+                while (size = write(output[1], start + total, _httpRequest.request_body.size() - total) > 0)
+                {
+                    total += size;
+                }
             }
     
             waitpid(id, nullptr, 0);
