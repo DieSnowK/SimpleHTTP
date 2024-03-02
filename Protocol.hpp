@@ -4,11 +4,12 @@
 #include <string>
 #include <vector>
 #include <unordered_map>
+#include <fcntl.h>
+#include <unistd.h>
 #include <sys/sendfile.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <fcntl.h>
-#include <unistd.h>
+#include <sys/wait.h>
 #include "Util.hpp"
 #include "Log.hpp"
 
@@ -111,6 +112,7 @@ public:
         else if(_httpRequest.method == "POST")
         {
             _httpRequest.cgi = true;
+            _httpRequest.path = _httpRequest.uri;
         }
         else
         {
@@ -345,8 +347,63 @@ private:
 
     int ProcessCgi()
     {
+        std::string &bin = _httpRequest.path;
 
-        return 0;
+        // 父子间通信用匿名管道 // TODO 待整理
+        int input[2]; // 父进程读
+        int output[2]; // 父进程写
+
+        if(pipe(input) < 0)
+        {
+            LOG(ERROR, "Pipe Input Error");
+            return NOT_FOUND;
+        }
+
+        if(pipe(output) < 0)
+        {
+            LOG(ERROR, "Pipe Output Error");
+            return NOT_FOUND;
+        }
+
+        pid_t id = fork();
+        if(id == 0) // Child
+        {
+            close(output[1]);
+            close(input[0]);
+
+            // 进程替换之后，子进程如何得知，对应的读写文件描述符是多少呢？ // TODO
+            // 虽然替换后子进程不知道对应读写fd，但是一定知道0 && 1
+            // 此时不需要知道读写fd了，只需要读0写1即可
+            // 在exec*执行前，dup2重定向
+            dup2(input[1], 1);
+            dup2(output[0], 1);
+
+            execl(bin.c_str(), bin.c_str(), nullptr); // TODO 待整理 #23
+
+            exit(5);
+        }
+        else if(id < 0)
+        {
+            LOG(ERROR, "Fork Error");
+            return NOT_FOUND;
+        }
+        else // Parent
+        {
+            close(output[0]);
+            close(input[1]);
+
+            if(_httpRequest.method == "POST")
+            {
+                
+            }
+    
+            waitpid(id, nullptr, 0);
+    
+            close(output[1]);
+            close(input[0]);
+        }
+
+        return OK;
     }
 
 private:
