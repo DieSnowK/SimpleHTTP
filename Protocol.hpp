@@ -159,7 +159,7 @@ public:
         else
         {
             // 资源不存在
-            LOG(WARNING, _httpRequest.path + "Not Found");
+            LOG(WARNING, _httpRequest.path + " Not Found");
             _httpResponse.status_code = NOT_FOUND;
             goto END;
         }
@@ -379,9 +379,23 @@ private:
             // GET带参通过环境变量导入子进程 // TODO 待整理
             if(_httpRequest.method == "GET")
             {
-                std::string argEnv = "ARG_STRING=";
+                std::string argEnv = "ARG=";
                 argEnv += _httpRequest.arg;
                 putenv((char *)argEnv.c_str());
+
+                LOG(INFO, "GET Method, Add ARG");
+            }
+            else if (_httpRequest.method == "POST")
+            {
+                std::string contentLength_Env = "CLENGTH=";
+                contentLength_Env += std::to_string(_httpRequest.content_length);
+                putenv((char *)contentLength_Env.c_str());
+
+                LOG(INFO, "POST Method, Add Content_Length");
+            }
+            else
+            {
+                // Do Nothing
             }
 
             // 进程替换之后，子进程如何得知，对应的读写文件描述符是多少呢？ // TODO
@@ -389,7 +403,7 @@ private:
             // 此时不需要知道读写fd了，只需要读0写1即可
             // 在exec*执行前，dup2重定向
             dup2(input[1], 1);
-            dup2(output[0], 1);
+            dup2(output[0], 0);
 
             execl(bin.c_str(), bin.c_str(), nullptr); // TODO 待整理 #23
 
@@ -410,7 +424,8 @@ private:
                 // 不能确保一次性就能写完，所以
                 const char *start = _httpRequest.request_body.c_str();
                 int size = 0, total = 0;
-                while (size = write(output[1], start + total, _httpRequest.request_body.size() - total) > 0)
+                while (total < _httpRequest.request_body.size() &&
+                    (size = write(output[1], start + total, _httpRequest.request_body.size() - total) > 0)) // TODO 此处优化考虑整理
                 {
                     total += size;
                 }

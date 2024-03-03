@@ -1,7 +1,7 @@
 bin = httpserver
 cgi = test_cgi
 cc = g++
-LD_FLAGS = -std=c++11 -lpthread -D DEBUG_SHOW
+LD_FLAGS = -std=c++11 -lpthread #-D DEBUG_SHOW
 src = main.cc
 curr = $(shell pwd)
 
