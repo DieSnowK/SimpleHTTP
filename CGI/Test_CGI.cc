@@ -4,36 +4,67 @@
 #include <unistd.h>
 using namespace std;
 
-int main()
+bool GetQuery(std::string& out)
 {
-    // 此时子进程标准输出已经重定向，想看打印只能从标准错误输出 #27 // TODO
-    cerr << getenv("METHOD") << endl;
-
     std::string method = getenv("METHOD");
-    std::string argStr;
-
+    bool ret = false;
     if (method == "GET")
     {
-        argStr = getenv("ARG");
+        out = getenv("ARG");
+        ret = true;
     }
-    else if(method == "POST")
+    else if (method == "POST")
     {
         // CGI如何得知需要从标准输入读取多少字节呢？
         int content_length = atoi(getenv("CLENGTH"));
 
         char ch = 'K';
-        while(content_length--)
+        while (content_length--)
         {
             read(0, &ch, 1);
-            argStr.push_back(ch);
+            out.push_back(ch);
         }
+        ret = true;
     }
     else
     {
-
+        // Do Nothing
     }
 
-    cerr << "++++++++++++++++++++++++++";
+    return ret;
+}
 
+void CutString(const std::string& in, std::string& out1, std::string& out2, const std::string sep)
+{
+    auto pos = in.find(sep);
+    if(pos != std::string::npos)
+    {
+        out1 = in.substr(0, pos);
+        out2 = in.substr(pos + sep.size());
+    }
+}
+
+int main()
+{
+    // 此时子进程标准输出已经重定向，想看打印只能从标准错误输出 #27 // TODO
+    std::string queryStr;
+    GetQuery(queryStr);
+
+    // Test Code：x=100&y=200
+    std::string arg1, arg2;
+    CutString(queryStr, arg1, arg2, "&");
+
+    std::string key1, value1, key2, value2;
+    CutString(arg1, key1, value1, "=");
+    CutString(arg2, key2, value2, "=");
+
+    // 1 -> 数据给父进程
+    std::cout << key1 << ":" << value1 << endl;
+    std::cout << key2 << ":" << value2 << endl;
+
+    // 2 -> DEBUG，输出到命令行
+    std::cerr << key1 << ":" << value1 << endl;
+    std::cerr << key2 << ":" << value2 << endl;
+    
     return 0;
 }
