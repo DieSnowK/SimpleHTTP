@@ -179,20 +179,19 @@ public:
 
         if(_request.cgi)
         {
-            _response.status_code = ProcessCgi();
+            _response.status_code = ProcessCgi(); // 执行目标程序，拿到结果到_response.response_body
         }
         else
         {
             // 1.至此，目标网页一定是存在的
             // 2.返回并不是单单返回网页，而是要构建HTTP响应 // TODO
-            _response.status_code = ProcessNonCgi();
+            _response.status_code = ProcessNonCgi(); // 简单的网页返回，返回静态网页，只需要打开即可 // TODO
         }
 
     END:
-        if(_response.status_code != OK)
-        {
-            BuildResponseHelper();
-        }
+        // 最后统一构建响应
+        BuildResponseHelper();
+       
         return;
     }
 
@@ -207,7 +206,22 @@ public:
             send(_sock, str.c_str(), str.size(), 0);
         }
         send(_sock, _response.blank.c_str(), _response.blank.size(), 0);
-        sendfile(_sock, _response.fd, nullptr, _response.fSize); // TODO 待整理
+
+        if(_request.cgi) // POST
+        {
+            const char *start = _response.response_body.c_str();
+            size_t size = 0, total = 0;
+
+            while (total < _response.response_body.size() && 
+                (size = send(_sock, start + total, _response.response_body.size() - total, 0) > 0))
+            {
+                total += size;
+            }
+        }
+        else // GET
+        {
+            sendfile(_sock, _response.fd, nullptr, _response.fSize); // TODO 待整理
+        }
 
         close(_response.fd);
     }
@@ -317,30 +331,43 @@ private:
         }
     }
 
+    // v1.0
     // 处理静态网页
+    // int ProcessNonCgi()
+    // {
+    //     _response.fd = open(_request.path.c_str(), O_RDONLY);
+    //     if(_response.fd >= 0)
+    //     {
+    //         // Status_Line
+    //         _response.status_line = HTTP_VERSION;
+    //         _response.status_line += " ";
+    //         _response.status_line += std::to_string(_response.status_code);
+    //         _response.status_line += " ";
+    //         _response.status_line += Util::Code2Desc(_response.status_code);
+    //         _response.status_line += LINE_END;
+    //
+    //         // Header
+    //         std::string header_line = "Content-Type: ";
+    //         header_line += Util::Suffix2Desc(_request.suffix);
+    //         header_line += LINE_END;
+    //         _response.response_header.push_back(header_line);
+    //
+    //         header_line = "Content-Length: ";
+    //         header_line += std::to_string(_response.fSize);
+    //         header_line += LINE_END;
+    //         _response.response_header.push_back(header_line);
+    //         return OK;
+    //     }
+    //
+    //     return NOT_FOUND;
+    // }
+
+    // v2.0 // TODO 考虑整理，因为v1.0内容和BuildResponseHelper有重叠
     int ProcessNonCgi()
     {
         _response.fd = open(_request.path.c_str(), O_RDONLY);
         if(_response.fd >= 0)
         {
-            // Status_Line
-            _response.status_line = HTTP_VERSION;
-            _response.status_line += " ";
-            _response.status_line += std::to_string(_response.status_code);
-            _response.status_line += " ";
-            _response.status_line += Util::Code2Desc(_response.status_code);
-            _response.status_line += LINE_END;
-
-            // Header
-            std::string header_line = "Content-Type: ";
-            header_line += Util::Suffix2Desc(_request.suffix);
-            header_line += LINE_END;
-            _response.response_header.push_back(header_line);
-
-            header_line = "Content-Length: ";
-            header_line += std::to_string(_response.fSize);
-            header_line += LINE_END;
-            _response.response_header.push_back(header_line);
             return OK;
         }
 
@@ -476,25 +503,77 @@ private:
     void BuildResponseHelper()
     {
         // 此处status_line是干净的，没有内容的
+        // 构建状态行
         _response.status_line += HTTP_VERSION;
         _response.status_line += " ";
         _response.status_line += std::to_string(_response.status_code);
         _response.status_line += " ";
         _response.status_line += Util::Code2Desc(_response.status_code);
 
+        // 构建响应正文，可能包括响应报头
         switch(_response.status_code)
         {
-        case 404:
-            HandlerNotFound();
+        case 200:
+            BuildOKResponse();
             break;
+        case 404:
+            HandlerError(PAGE_404);
+            break;
+        // case 500:
+        //     HandlerError(PAGE_500);
+        //     break;
         default:
             break;
         }
     }
 
-    void HandlerNotFound()
+    void BuildOKResponse()
     {
+        // Header
+        std::string header_line = "Content-Type: ";
+        header_line += Util::Suffix2Desc(_request.suffix);
+        header_line += LINE_END;
+        _response.response_header.push_back(header_line);
+
+        header_line = "Content-Length: ";
+        if(_request.cgi)
+        {
+            header_line += std::to_string(_response.response_body.size()); // POST
+        }
+        else
+        {
+            header_line += std::to_string(_response.fSize); // GET
+        }
+        header_line += LINE_END;
+        _response.response_header.push_back(header_line);
+    }
+
+    // TODO 待整理
+    // 总不能为每一种错误都单独写一个处理函数吧？
+    // 将所有错误情况归置处理
+    void HandlerError(std::string page)
+    {
+        // TODO 戴整理
+        // ProcessCgi()中也可能出错，所以此时将cgi置false
+        // 这样发送效应的时候就会按非cgi模式发送
+        _request.cgi = false;
         // 给用户返回对应的404页面
+        _response.fd = open(page.c_str(), 0, O_RDONLY);
+        if(_response.fd > 0)
+        {
+            struct stat st;
+            stat(page.c_str(), &st);
+            _response.fSize = st.st_size; // 重置大小，否则send时按正常请求的网页大小发 // TODO待整理
+
+            std::string line = "Content-Type: text/html";
+            line += LINE_END;
+            _response.response_header.push_back(line);
+
+            line = "Content-Length: ";
+            line += std::to_string(st.st_size);
+            line += LINE_END;
+            _response.response_header.push_back(line);
+        }
     }
 
 private:
