@@ -207,23 +207,30 @@ public:
         }
         send(_sock, _response.blank.c_str(), _response.blank.size(), 0);
 
-        if(_request.cgi) // POST
+        if(_request.cgi)
         {
             const char *start = _response.response_body.c_str();
             size_t size = 0, total = 0;
+
+            // for debug
+            // int i = 0;
 
             while (total < _response.response_body.size() && 
                 (size = send(_sock, start + total, _response.response_body.size() - total, 0) > 0))
             {
                 total += size;
+
+                // for debug
+                // std::cout << ++i << std::endl;
+                // std::cout << "size: " << size << std::endl;
+                // std::cout << "total: " << total << std::endl;
             }
         }
-        else // GET
+        else
         {
             sendfile(_sock, _response.fd, nullptr, _response.fSize); // TODO 待整理
+            close(_response.fd);
         }
-
-        close(_response.fd);
     }
 
 private:
@@ -472,6 +479,10 @@ private:
                 _response.response_body += ch;
             }
 
+            // for debug
+            // std::cout << "CGI RET" << std::endl;
+            // std::cout << _response.response_body << std::endl;
+
             int status = 0;
             pid_t ret = waitpid(id, &status, 0);
             if(ret == id)
@@ -509,9 +520,10 @@ private:
         _response.status_line += std::to_string(_response.status_code);
         _response.status_line += " ";
         _response.status_line += Util::Code2Desc(_response.status_code);
+        _response.status_line += LINE_END;
 
         // 构建响应正文，可能包括响应报头
-        switch(_response.status_code)
+        switch (_response.status_code)
         {
         case 200:
             BuildOKResponse();
@@ -538,11 +550,11 @@ private:
         header_line = "Content-Length: ";
         if(_request.cgi)
         {
-            header_line += std::to_string(_response.response_body.size()); // POST
+            header_line += std::to_string(_response.response_body.size());
         }
         else
         {
-            header_line += std::to_string(_response.fSize); // GET
+            header_line += std::to_string(_response.fSize);
         }
         header_line += LINE_END;
         _response.response_header.push_back(header_line);

@@ -63,8 +63,8 @@ int main()
     std::cout << key2 << ":" << value2 << endl;
 
     // 2 -> DEBUG，输出到命令行
-    std::cerr << key1 << ":" << value1 << endl;
-    std::cerr << key2 << ":" << value2 << endl;
-    
+    std::cerr << "CGI: " << key1 << ":" << value1 << endl;
+    std::cerr << "CGI: " << key2 << ":" << value2 << endl;
+
     return 0;
 }
