@@ -73,6 +73,12 @@ struct Util
         case 404:
             desc = "NOT_FOUND";
             break;
+        case 400:
+            desc = "BAD_REQUEST";
+            break;
+        case 500:
+            desc = "SERVER_ERROR";
+            break;
         default:
             break;
         }

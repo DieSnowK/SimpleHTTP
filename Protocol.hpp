@@ -21,8 +21,9 @@
 #define PAGE_404 "404.html"
 
 #define OK 200
+#define BAD_REQUEST 400
 #define NOT_FOUND 404
-
+#define SERVER_ERROR 500
 struct HttpRequest
 {
     std::string request_line;
@@ -93,7 +94,7 @@ public:
         if (_request.method != "GET" && _request.method != "POST")
         {
             // 非法请求
-            _response.status_code = NOT_FOUND; // TODO
+            _response.status_code = BAD_REQUEST; // TODO
             LOG(WARNING, "Method is not right");
             goto END;
         }
@@ -393,14 +394,14 @@ private:
         if(pipe(input) < 0)
         {
             LOG(ERROR, "Pipe Input Error");
-            code = NOT_FOUND;
+            code = SERVER_ERROR;
             return code;
         }
 
         if(pipe(output) < 0)
         {
             LOG(ERROR, "Pipe Output Error");
-            code = NOT_FOUND;
+            code = SERVER_ERROR;
             return code;
         }
 
@@ -451,7 +452,7 @@ private:
         else if(id < 0)
         {
             LOG(ERROR, "Fork Error");
-            code = NOT_FOUND;
+            code = SERVER_ERROR;
             return code;
         }
         else // Parent
@@ -494,12 +495,12 @@ private:
                     }
                     else
                     {
-                        code = NOT_FOUND;
+                        code = BAD_REQUEST;
                     }
                 }
                 else
                 {
-                    code = NOT_FOUND;
+                    code = SERVER_ERROR;
                 }
             }
 
@@ -527,16 +528,21 @@ private:
 
         switch (_response.status_code)
         {
-        case 200:
+        case OK:
             BuildOKResponse();
             break;
-        case 404:
+        case NOT_FOUND:
             path += PAGE_404;
             HandlerError(path);
             break;
-        // case 500:
-        //     HandlerError(PAGE_500);
-        //     break;
+        case BAD_REQUEST:  // 暂时先404处理，后面有需要再改
+            path += PAGE_404;
+            HandlerError(path);
+            break;
+        case SERVER_ERROR:
+            path += PAGE_404;
+            HandlerError(path);
+            break;
         default:
             break;
         }
