@@ -611,13 +611,18 @@ private:
     HttpResponse _response;
 }; // end of EndPoint
 
-struct Entrance
+struct CallBack
 {
+    // 重载() --> 仿函数
+    void operator()(int sock)
+    {
+        HandlerRequest(sock);
+    }
+
     // 这里设置static是为了给thread传start_routine时，参数可以对应
-    static void* HandlerRequest(void* arg)
+    void HandlerRequest(int sock)
     {
         LOG(INFO, "Hander Request Begin");
-        int sock = *((int*)arg);
 
         EndPoint *ep = new EndPoint(sock); // TODO
 
@@ -636,6 +641,11 @@ struct Entrance
         delete ep; 
         
         LOG(INFO, "Hander Request Begin");
-        return nullptr;
     }
+
+    CallBack()
+    {}
+
+    ~CallBack()
+    {}
 };

@@ -1,6 +1,8 @@
 #pragma once
+#include <signal.h>
 #include "TcpServer.hpp"
-#include "Protocol.hpp"
+#include "Task.hpp"
+#include "ThreadPool.hpp"
 
 static const uint16_t PORT = 8090;
 
@@ -14,6 +16,8 @@ public:
 
     void Init()
     {
+        // 信号SIGPIPE需要进行忽略，如果不忽略，在写入的时候，可能直接崩溃server
+        signal(SIGPIPE, SIG_IGN); // TODO 待整理 #36
     }
 
     void Loop()
@@ -34,14 +38,14 @@ public:
             }
             LOG(INFO, "Get a new link");
 
-            int *tmpSock = new int(sock);
-            pthread_t tid;
-            pthread_create(&tid, nullptr, Entrance::HandlerRequest, tmpSock);
-            pthread_detach(tid);
+            // v2.0
+            Task task(sock);
+            _threadPool.Push(task);
         }
     }
 
 private:
     uint16_t _port;
     bool _stop;
+    ThreadPool _threadPool;
 };
