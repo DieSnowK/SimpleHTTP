@@ -70,10 +70,12 @@ struct HttpResponse
 // 负责两端业务处理，主要包括以下功能
 // 读取请求，分析请求，构建相应 IO通信
 class EndPoint
+
 {
 public:
     EndPoint(int sock)
         : _sock(sock)
+        , _stop(false)
     {}
 
     ~EndPoint()
@@ -83,9 +85,13 @@ public:
 
     void RecvRequest()
     {
-        RecvRequestLine();
-        RecvRequestHeader();
-        ParseRequest();
+        // TODO 此设计可整理 属于处理读取出错
+        if ((!RecvRequestLine()) && (!RecvRequestHeader()))
+        {
+            ParseRequestLine();
+            ParseRequestHeader();
+            RecvRequestBody();
+        }
     }
 
     void BuildResponse()
@@ -213,18 +219,10 @@ public:
             const char *start = _response.response_body.c_str();
             size_t size = 0, total = 0;
 
-            // for debug
-            // int i = 0;
-
             while (total < _response.response_body.size() &&
                    (size = send(_sock, start + total, _response.response_body.size() - total, 0) > 0))
             {
                 total += size;
-
-                // for debug
-                // std::cout << ++i << std::endl;
-                // std::cout << "size: " << size << std::endl;
-                // std::cout << "total: " << total << std::endl;
             }
         }
         else
@@ -234,22 +232,29 @@ public:
         }
     }
 
+    bool IsStop()
+    {
+        return _stop;
+    }
+
 private:
-    void ParseRequest()
+    // 处理读取出错 // TODO #35
+    bool RecvRequestLine()
     {
-        ParseRequestLine();
-        ParseRequestHeader();
-        RecvRequestBody();
+        if (Util::ReadLine(_sock, _request.request_line) > 0)
+        {
+            _request.request_line.resize(_request.request_line.size() - 1); // 去掉结尾换行符
+            LOG(DEBUG, _request.request_line);
+        }
+        else
+        {
+            _stop = true; // 读取出错，不往下继续执行了
+        }
+
+        return _stop;
     }
 
-    void RecvRequestLine()
-    {
-        Util::ReadLine(_sock, _request.request_line);
-        _request.request_line.resize(_request.request_line.size() - 1); // 去掉结尾换行符
-        LOG(DEBUG, _request.request_line);
-    }
-
-    void RecvRequestHeader()
+    bool RecvRequestHeader()
     {
         std::string line;
         while(true)
@@ -257,6 +262,7 @@ private:
             line.clear();
             if(Util::ReadLine(_sock, line) <= 0)
             {
+                _stop = true; // 处理读取出错
                 break;
             }
 
@@ -271,6 +277,8 @@ private:
             
             LOG(DEBUG, line); 
         }
+
+        return _stop;
     }
 
     void ParseRequestLine()
@@ -312,7 +320,7 @@ private:
         return false;
     }
     
-    void RecvRequestBody()
+    bool RecvRequestBody()
     {
         if(IsRecvRequestBody())
         {
@@ -330,13 +338,15 @@ private:
                 }
                 else
                 {
-                    // TODO
+                    _stop = true; // 处理读取出错
                     break;
                 }
             }
 
             LOG(DEBUG, body);
         }
+
+        return _stop;
     }
 
     // v1.0
@@ -480,9 +490,6 @@ private:
                 _response.response_body += ch;
             }
 
-            // for debug
-            std::cout << __LINE__ << _response.response_body << std::endl;
-
             int status = 0;
             pid_t ret = waitpid(id, &status, 0);
             if(ret == id)
@@ -509,7 +516,7 @@ private:
         }
 
         return OK;
-    }
+    } // end of ProcessCgi
 
     void BuildResponseHelper()
     {
@@ -599,9 +606,10 @@ private:
 
 private:
     int _sock;
+    bool _stop;
     HttpRequest _request;
     HttpResponse _response;
-};
+}; // end of EndPoint
 
 struct Entrance
 {
@@ -612,10 +620,20 @@ struct Entrance
         int sock = *((int*)arg);
 
         EndPoint *ep = new EndPoint(sock); // TODO
+
         ep->RecvRequest();
-        ep->BuildResponse();
-        ep->SendResponse();
-        delete ep;
+        if(!ep->IsStop()) // 只有读取请求不出错，才往下执行 // TODO 可整理
+        {
+            LOG(INFO, "Recv No Error, Continue Build And Send");
+            ep->BuildResponse();
+            ep->SendResponse();
+        }
+        else
+        {
+            LOG(WARNING, "Recv Error, Stop Build And Send");
+        }
+
+        delete ep; 
         
         LOG(INFO, "Hander Request Begin");
         return nullptr;
