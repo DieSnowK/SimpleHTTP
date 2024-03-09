@@ -215,8 +215,8 @@ public:
             // for debug
             // int i = 0;
 
-            while (total < _response.response_body.size() && 
-                (size = send(_sock, start + total, _response.response_body.size() - total, 0) > 0))
+            while (total < _response.response_body.size() &&
+                   (size = send(_sock, start + total, _response.response_body.size() - total, 0) > 0))
             {
                 total += size;
 
@@ -480,8 +480,7 @@ private:
             }
 
             // for debug
-            // std::cout << "CGI RET" << std::endl;
-            // std::cout << _response.response_body << std::endl;
+            std::cout << __FILE__ << _response.response_body << std::endl;
 
             int status = 0;
             pid_t ret = waitpid(id, &status, 0);
@@ -521,15 +520,19 @@ private:
         _response.status_line += " ";
         _response.status_line += Util::Code2Desc(_response.status_code);
         _response.status_line += LINE_END;
-
+        
         // 构建响应正文，可能包括响应报头
+        std::string path = WEB_ROOT;
+        path += '/';
+
         switch (_response.status_code)
         {
         case 200:
             BuildOKResponse();
             break;
         case 404:
-            HandlerError(PAGE_404);
+            path += PAGE_404;
+            HandlerError(path);
             break;
         // case 500:
         //     HandlerError(PAGE_500);
@@ -571,7 +574,7 @@ private:
         _request.cgi = false;
         // 给用户返回对应的404页面
         _response.fd = open(page.c_str(), 0, O_RDONLY);
-        if(_response.fd > 0)
+        if (_response.fd > 0)
         {
             struct stat st;
             stat(page.c_str(), &st);

@@ -71,7 +71,7 @@ struct Util
             desc = "OK";
             break;
         case 404:
-            desc = "404";
+            desc = "NOT_FOUND";
             break;
         default:
             break;
