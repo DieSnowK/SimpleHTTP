@@ -640,7 +640,7 @@ struct CallBack
 
         delete ep; 
         
-        LOG(INFO, "Hander Request Begin");
+        LOG(INFO, "Hander Request End");
     }
 
     CallBack()

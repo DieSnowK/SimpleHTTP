@@ -8,13 +8,14 @@
 #include <pthread.h>
 #include "Log.hpp"
 
+static const uint16_t PORT = 8090;
 static const int BACKLOG = 128;
 
 // 单例 -- 饿汉模式
 class TcpServer
 {
 public:
-    static TcpServer* GetInstance(uint16_t port)
+    static TcpServer* GetInstance(uint16_t port = PORT)
     {
         static pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
         if(svr == nullptr) // 双重判空指针，降低锁冲突的概率，提高性能

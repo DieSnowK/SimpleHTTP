@@ -20,5 +20,5 @@ public:
     {}
 private:
     int _sock;
-    CallBack _handler; // ÉèÖÃ»Øµ÷
+    CallBack _handler; // è®¾ç½®å›è°ƒ
 };

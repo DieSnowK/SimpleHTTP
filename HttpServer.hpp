@@ -4,8 +4,6 @@
 #include "Task.hpp"
 #include "ThreadPool.hpp"
 
-static const uint16_t PORT = 8090;
-
 class HttpServer
 {
 public:
@@ -20,32 +18,29 @@ public:
         signal(SIGPIPE, SIG_IGN); // TODO 待整理 #36
     }
 
-    void Loop()
+    void Loop(int threadNum = THREAD_POOL_NUM)
     {
         TcpServer *tsvr = TcpServer::GetInstance(_port);
-        int listenSock = tsvr->Sock();
-
+        
         LOG(INFO, "Loop Begin");
         while(!_stop)
         {
             struct sockaddr_in peer;
             socklen_t len = sizeof(peer);
 
-            int sock = accept(listenSock, (struct sockaddr *)&peer, &len);
+            int sock = accept(tsvr->Sock(), (struct sockaddr *)&peer, &len);
             if(sock < 0)
             {
                 continue;
             }
             LOG(INFO, "Get a new link");
 
-            // v2.0
             Task task(sock);
-            _threadPool.Push(task);
+            ThreadPool::GetInstance(threadNum)->Push(task);
         }
     }
 
 private:
     uint16_t _port;
     bool _stop;
-    ThreadPool _threadPool;
 };
