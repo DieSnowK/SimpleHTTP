@@ -130,9 +130,6 @@ public:
 
         _request.path.insert(0, WEB_ROOT); // 从根目录开始
 
-        LOG(DEBUG, _request.path);
-        LOG(DEBUG, _request.arg);
-
         // 如果访问的是根目录，则默认访问主页
         if(_request.path[_request.path.size() - 1] == '/')
         {
@@ -274,8 +271,6 @@ private:
 
             line.resize(line.size() - 1); // 去掉结尾换行符
             _request.request_header.push_back(line);
-            
-            LOG(DEBUG, line); 
         }
 
         return _stop;
@@ -289,10 +284,6 @@ private:
         // TODO 可整理
         // 可能不是所有人都严格遵守标准，所以将method统一转化为大写
         std::transform(_request.method.begin(), _request.method.end(), _request.method.begin(), ::toupper);
-
-        LOG(DEBUG, _request.method);
-        LOG(DEBUG, _request.uri);
-        LOG(DEBUG, _request.version);
     }
 
     void ParseRequestHeader()
@@ -422,25 +413,18 @@ private:
             close(input[0]);
 
             // 子进程如何知道方法是什么? // TODO
-            std::string methodEnv = "METHOD=";
-            methodEnv += _request.method;
-            putenv((char *)methodEnv.c_str());
+            // 这里也可以整理不要用putenv，用setenv更好些 // TODO
+            setenv("METHOD", _request.method.c_str(), 1);
 
             // GET带参通过环境变量导入子进程 // TODO 待整理
             if(_request.method == "GET")
             {
-                std::string argEnv = "ARG=";
-                argEnv += _request.arg;
-                putenv((char *)argEnv.c_str());
-
+                setenv("ARG", _request.arg.c_str(), 1);
                 LOG(INFO, "GET Method, Add ARG");
             }
             else if (_request.method == "POST")
             {
-                std::string contentLength_Env = "CLENGTH=";
-                contentLength_Env += std::to_string(_request.content_length);
-                putenv((char *)contentLength_Env.c_str());
-
+                setenv("CLENGTH", std::to_string(_request.content_length).c_str(), 1);
                 LOG(INFO, "POST Method, Add Content_Length");
             }
             else

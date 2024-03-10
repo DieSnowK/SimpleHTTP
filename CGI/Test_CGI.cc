@@ -7,6 +7,7 @@ using namespace std;
 bool GetQuery(std::string& out)
 {
     std::string method = getenv("METHOD");
+
     bool ret = false;
     if (method == "GET")
     {

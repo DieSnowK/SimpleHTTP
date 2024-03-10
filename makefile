@@ -1,7 +1,8 @@
 bin = httpserver
 cgi = test_cgi
 cc = g++
-LD_FLAGS = -std=c++11 -lpthread #-D DEBUG_SHOW
+GLD_FLAGS = -std=c++11 -D DEBUG_SHOW
+LD_FLAGS = $(GLD_FLAGS) -lpthread
 src = main.cc
 curr = $(shell pwd)
 
@@ -12,7 +13,7 @@ $(bin):$(src)
 	$(cc) -o $@ $^ $(LD_FLAGS)
 
 $(cgi):$(curr)/CGI/*.cc
-	$(cc) -o $@ $^ -std=c++11
+	$(cc) -o $@ $^ $(GLD_FLAGS)
 
 .PHONY:output
 output:
