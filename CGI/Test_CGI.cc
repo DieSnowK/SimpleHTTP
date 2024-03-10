@@ -67,5 +67,19 @@ int main()
     std::cerr << "CGI: " << key1 << ":" << value1 << endl;
     std::cerr << "CGI: " << key2 << ":" << value2 << endl;
 
+    int x = atoi(value1.c_str());
+    int y = atoi(value2.c_str());
+
+    // 可能想进行某种计算(搜索、登陆等)，想进行某种存储(注册)
+    std::cout << "<html>";
+    std::cout << "<head><meta charset=\"utf-8\"></head>";
+    std::cout << "<body>";
+    std::cout << "<h3> " << value1 << " + " << value2 << " = " << x + y << "</h3>";
+    std::cout << "<h3> " << value1 << " - " << value2 << " = " << x - y << "</h3>";
+    std::cout << "<h3> " << value1 << " * " << value2 << " = " << x * y << "</h3>";
+    std::cout << "<h3> " << value1 << " / " << value2 << " = " << x / y << "</h3>";
+    std::cout << "</body>";
+    std::cout << "</html>";
+
     return 0;
 }

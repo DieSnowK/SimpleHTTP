@@ -21,6 +21,8 @@ output:
 	cp $(bin) output
 	cp -rf wwwroot output
 	cp $(cgi) output/wwwroot
+	cp ./CGI/shell_cgi.sh output/wwwroot
+	cp ./CGI/python_cgi.py output/wwwroot
 
 .PHONY:clean
 clean:
