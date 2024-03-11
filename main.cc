@@ -15,7 +15,7 @@ int main(int argc, char *argv[])
         exit(4);
     }
 
-    std::unique_ptr<HttpServer> httpServer(new HttpServer);
+    std::unique_ptr<HttpServer> httpServer(new HttpServer(atoi(argv[1])));
     httpServer->Init();
     httpServer->Loop();
 
