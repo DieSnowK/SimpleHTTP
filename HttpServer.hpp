@@ -15,7 +15,7 @@ public:
     void Init()
     {
         // 信号SIGPIPE需要进行忽略，如果不忽略，在写入的时候，可能直接崩溃server
-        signal(SIGPIPE, SIG_IGN); // TODO 待整理 #36
+        signal(SIGPIPE, SIG_IGN);
     }
 
     void Loop(int threadNum = THREAD_POOL_NUM)

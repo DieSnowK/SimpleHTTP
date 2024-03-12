@@ -85,7 +85,6 @@ public:
 
     void RecvRequest()
     {
-        // TODO 此设计可整理 属于处理读取出错
         if ((!RecvRequestLine()) && (!RecvRequestHeader()))
         {
             ParseRequestLine();
@@ -140,7 +139,7 @@ public:
 
         // 确认访问资源是否存在
         struct stat st;
-        if(stat(_request.path.c_str(), &st) == 0) // TODO  待整理stat()
+        if(stat(_request.path.c_str(), &st) == 0)
         {
             // 访问的是否是一个具体资源？
             if(S_ISDIR(st.st_mode))
@@ -157,7 +156,7 @@ public:
             // 是否是一个可程序程序？
             if (st.st_mode & S_IXUSR || st.st_mode & S_IXGRP || st.st_mode & S_IXOTH)
             {
-                _request.cgi = true; // TODO CGI标志位感觉有多余
+                _request.cgi = true;
             }
 
             _response.fSize = st.st_size;
@@ -188,8 +187,8 @@ public:
         else
         {
             // 1.至此，目标网页一定是存在的
-            // 2.返回并不是单单返回网页，而是要构建HTTP响应 // TODO
-            _response.status_code = ProcessNonCgi(); // 简单的网页返回，返回静态网页，只需要打开即可 // TODO
+            // 2.返回并不是单单返回网页，而是要构建HTTP响应
+            _response.status_code = ProcessNonCgi(); // 简单的网页返回，返回静态网页，只需要打开即可
         }
 
     END:
@@ -224,7 +223,7 @@ public:
         }
         else
         {
-            sendfile(_sock, _response.fd, nullptr, _response.fSize); // TODO 待整理
+            sendfile(_sock, _response.fd, nullptr, _response.fSize);
             close(_response.fd);
         }
     }
@@ -235,7 +234,7 @@ public:
     }
 
 private:
-    // 处理读取出错 // TODO #35
+    // 处理读取出错
     bool RecvRequestLine()
     {
         if (Util::ReadLine(_sock, _request.request_line) > 0)
@@ -278,10 +277,9 @@ private:
 
     void ParseRequestLine()
     {
-        std::stringstream ss(_request.request_line); // TODO 可整理
+        std::stringstream ss(_request.request_line);
         ss >> _request.method >> _request.uri >> _request.version;
 
-        // TODO 可整理
         // 可能不是所有人都严格遵守标准，所以将method统一转化为大写
         std::transform(_request.method.begin(), _request.method.end(), _request.method.begin(), ::toupper);
     }
@@ -340,38 +338,6 @@ private:
         return _stop;
     }
 
-    // v1.0
-    // 处理静态网页
-    // int ProcessNonCgi()
-    // {
-    //     _response.fd = open(_request.path.c_str(), O_RDONLY);
-    //     if(_response.fd >= 0)
-    //     {
-    //         // Status_Line
-    //         _response.status_line = HTTP_VERSION;
-    //         _response.status_line += " ";
-    //         _response.status_line += std::to_string(_response.status_code);
-    //         _response.status_line += " ";
-    //         _response.status_line += Util::Code2Desc(_response.status_code);
-    //         _response.status_line += LINE_END;
-    //
-    //         // Header
-    //         std::string header_line = "Content-Type: ";
-    //         header_line += Util::Suffix2Desc(_request.suffix);
-    //         header_line += LINE_END;
-    //         _response.response_header.push_back(header_line);
-    //
-    //         header_line = "Content-Length: ";
-    //         header_line += std::to_string(_response.fSize);
-    //         header_line += LINE_END;
-    //         _response.response_header.push_back(header_line);
-    //         return OK;
-    //     }
-    //
-    //     return NOT_FOUND;
-    // }
-
-    // v2.0 // TODO 考虑整理，因为v1.0内容和BuildResponseHelper有重叠
     int ProcessNonCgi()
     {
         _response.fd = open(_request.path.c_str(), O_RDONLY);
@@ -388,7 +354,7 @@ private:
         int code = 0; // 退出码
         std::string &bin = _request.path;
 
-        // 父子间通信用匿名管道 // TODO 待整理
+        // 父子间通信用匿名管道
         int input[2]; // 父进程读
         int output[2]; // 父进程写
 
@@ -412,11 +378,10 @@ private:
             close(output[1]);
             close(input[0]);
 
-            // 子进程如何知道方法是什么? // TODO
-            // 这里也可以整理不要用putenv，用setenv更好些 // TODO
+            // 子进程如何知道方法是什么?
             setenv("METHOD", _request.method.c_str(), 1);
 
-            // GET带参通过环境变量导入子进程 // TODO 待整理
+            // GET带参通过环境变量导入子进程
             if(_request.method == "GET")
             {
                 setenv("ARG", _request.arg.c_str(), 1);
@@ -432,14 +397,14 @@ private:
                 // Do Nothing
             }
 
-            // 进程替换之后，子进程如何得知，对应的读写文件描述符是多少呢？ // TODO
+            // 进程替换之后，子进程如何得知，对应的读写文件描述符是多少呢？
             // 虽然替换后子进程不知道对应读写fd，但是一定知道0 && 1
             // 此时不需要知道读写fd了，只需要读0写1即可
             // 在exec*执行前，dup2重定向
             dup2(input[1], 1);
             dup2(output[0], 0);
 
-            execl(bin.c_str(), bin.c_str(), nullptr); // TODO 待整理 #23
+            execl(bin.c_str(), bin.c_str(), nullptr);
 
             exit(5);
         }
@@ -460,7 +425,7 @@ private:
                 const char *start = _request.request_body.c_str();
                 int size = 0, total = 0;
                 while (total < _request.request_body.size() &&
-                    (size = write(output[1], start + total, _request.request_body.size() - total) > 0)) // TODO 此处优化考虑整理
+                    (size = write(output[1], start + total, _request.request_body.size() - total) > 0))
                 {
                     total += size;
                 }
@@ -603,15 +568,14 @@ struct CallBack
         HandlerRequest(sock);
     }
 
-    // 这里设置static是为了给thread传start_routine时，参数可以对应
     void HandlerRequest(int sock)
     {
         LOG(INFO, "Hander Request Begin");
 
-        EndPoint *ep = new EndPoint(sock); // TODO
+        EndPoint *ep = new EndPoint(sock);
 
         ep->RecvRequest();
-        if(!ep->IsStop()) // 只有读取请求不出错，才往下执行 // TODO 可整理
+        if(!ep->IsStop()) // 只有读取请求不出错，才往下执行
         {
             LOG(INFO, "Recv No Error, Continue Build And Send");
             ep->BuildResponse();

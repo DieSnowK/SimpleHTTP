@@ -28,7 +28,7 @@ public:
         return _tp;
     }
 
-    // TODO 待整理 static使该成员函数没有this指针，因为线程执行的函数只能有一个void*参数
+    // static使该成员函数没有this指针，因为线程执行的函数只能有一个void*参数
     static void *ThreadRoutine(void *args)
     {
         ThreadPool *tp = (ThreadPool *)args;
@@ -37,12 +37,12 @@ public:
         {
             Task task;
             tp->Lock();
-            while(tp->TaskQueueIsEmpty()) // TODO 待整理 while防止伪唤醒 #40
+            while(tp->TaskQueueIsEmpty()) // while防止伪唤醒
             {
                 tp->ThreadWait();
             }
             tp->Pop(task);
-            tp->Unlock(); // TODO 注意，不要在临界资源区内处理任务哦~
+            tp->Unlock(); // 注意，不要在临界资源区内处理任务哦~
             task.ProcessOn();
         }
     }

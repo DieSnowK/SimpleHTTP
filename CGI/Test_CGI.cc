@@ -47,7 +47,7 @@ void CutString(const std::string& in, std::string& out1, std::string& out2, cons
 
 int main()
 {
-    // 此时子进程标准输出已经重定向，想看打印只能从标准错误输出 #27 // TODO
+    // 此时子进程标准输出已经重定向，想看打印只能从标准错误输出
     std::string queryStr;
     GetQuery(queryStr);
 
