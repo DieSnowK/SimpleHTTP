@@ -12,7 +12,7 @@
 // 每次调用Log()都要手动输入__FILE__和__LINE__，很麻烦
 // 所以用宏代替函数，减少固定的传参输入
 // 但是level是int类型，无法传给string
-// #可以把一个红参数编程对应的字符串
+// #可以把一个宏参数变成对应的字符串
 #define LOG(level, msg) Log(#level, msg, __FILE__, __LINE__)
 
 void Log(std::string level, std::string msg, std::string file_name, int line)
