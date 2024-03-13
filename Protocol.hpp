@@ -99,7 +99,7 @@ public:
         if (_request.method != "GET" && _request.method != "POST")
         {
             // 非法请求
-            _response.status_code = BAD_REQUEST; // TODO
+            _response.status_code = BAD_REQUEST;
             LOG(WARNING, "Method is not right");
             goto END;
         }
@@ -525,22 +525,20 @@ private:
         _response.response_header.push_back(header_line);
     }
 
-    // TODO 待整理
     // 总不能为每一种错误都单独写一个处理函数吧？
     // 将所有错误情况归置处理
     void HandlerError(std::string page)
     {
-        // TODO 戴整理
         // ProcessCgi()中也可能出错，所以此时将cgi置false
         // 这样发送效应的时候就会按非cgi模式发送
         _request.cgi = false;
-        // 给用户返回对应的404页面
+        // 给用户返回对应的错误页面
         _response.fd = open(page.c_str(), 0, O_RDONLY);
         if (_response.fd > 0)
         {
             struct stat st;
             stat(page.c_str(), &st);
-            _response.fSize = st.st_size; // 重置大小，否则send时按正常请求的网页大小发 // TODO待整理
+            _response.fSize = st.st_size; // 重置大小，否则send时按正常请求的网页大小发
 
             std::string line = "Content-Type: text/html";
             line += LINE_END;
