@@ -16,8 +16,8 @@
 #define SEP ": "
 #define LINE_END "\r\n"
 #define WEB_ROOT  "wwwroot"
-#define HOME_PAGE "index.html"
-#define HTTP_VERSION "HTTP/1.0"
+#define HOME_PAGE "Introduce/index.html"
+#define HTTP_VERSION "HTTP/1.1"
 #define PAGE_404 "404.html"
 
 #define OK 200
