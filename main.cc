@@ -15,6 +15,8 @@ int main(int argc, char *argv[])
         exit(4);
     }
 
+    daemon(1, 0);
+
     std::unique_ptr<HttpServer> httpServer(new HttpServer(atoi(argv[1])));
     httpServer->Init();
     httpServer->Loop();
