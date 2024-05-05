@@ -11,16 +11,16 @@
 static const uint16_t PORT = 8090;
 static const int BACKLOG = 128;
 
-// 单例 -- 饿汉模式
+// 鍗曚緥 -- 楗挎眽妯″紡
 class TcpServer
 {
 public:
     static TcpServer* GetInstance(uint16_t port = PORT)
     {
         static pthread_mutex_t lock = PTHREAD_MUTEX_INITIALIZER;
-        if(svr == nullptr) // 双重判空指针，降低锁冲突的概率，提高性能
+        if(svr == nullptr) // 鍙岄噸鍒ょ┖鎸囬拡锛岄檷浣庨攣鍐茬獊鐨勬鐜囷紝鎻愰珮鎬ц兘
         {
-            // 注意线程安全
+            // 娉ㄦ剰绾跨▼瀹夊叏
             pthread_mutex_lock(&lock);
             if(svr == nullptr)
             {
@@ -50,7 +50,7 @@ public:
             exit(1);
         }
 
-        // 设置端口复用
+        // 璁剧疆绔彛澶嶇敤
         int opt = 1;
         setsockopt(_listenSock, SOL_SOCKET, SO_REUSEPORT, &opt, sizeof(opt));
         LOG(INFO, "Create Listen Socket ... Success");
